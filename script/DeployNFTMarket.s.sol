@@ -8,6 +8,9 @@ import "../src/NFTMarket.sol";
 contract DeployNFTMarket is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // 先拿到部署者地址（从私钥算出，安全）
+        address deployer = vm.addr(deployerPrivateKey);
+
         vm.startBroadcast(deployerPrivateKey);
 
         MyERC20WithTransferAndCall paymentToken = new MyERC20WithTransferAndCall(
@@ -17,7 +20,7 @@ contract DeployNFTMarket is Script {
             );
         console.log("PaymentToken:", address(paymentToken));
 
-        address feeRecipient = msg.sender; // 部署者作为手续费接收地址
+        address feeRecipient = deployer; // 用预先算好的 deployer，不再用 msg.sender
         uint256 feeRate = 50;
         NFTMarket market = new NFTMarket(
             address(paymentToken),
