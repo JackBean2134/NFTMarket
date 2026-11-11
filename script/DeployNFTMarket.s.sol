@@ -13,20 +13,12 @@ contract DeployNFTMarket is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        MyERC20WithTransferAndCall paymentToken = new MyERC20WithTransferAndCall(
-                "PayToken",
-                "PAY",
-                10000 * 1e18
-            );
+        MyERC20WithTransferAndCall paymentToken = new MyERC20WithTransferAndCall("PayToken", "PAY", 10000 * 1e18);
         console.log("PaymentToken:", address(paymentToken));
 
         address feeRecipient = deployer; // 用预先算好的 deployer，不再用 msg.sender
         uint256 feeRate = 50;
-        NFTMarket market = new NFTMarket(
-            address(paymentToken),
-            feeRecipient,
-            feeRate
-        );
+        NFTMarket market = new NFTMarket(address(paymentToken), feeRecipient, feeRate);
         console.log("NFTMarket:", address(market));
 
         vm.stopBroadcast();

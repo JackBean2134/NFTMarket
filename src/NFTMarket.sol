@@ -24,55 +24,30 @@ contract NFTMarket is ERC721Holder, ReentrancyGuard, Ownable {
     address public feeRecipient;
     uint256 public constant FEE_BASE = 1000;
 
-    event Listed(
-        uint256 indexed listingId,
-        address indexed nft,
-        uint256 tokenId,
-        address seller,
-        uint256 price
-    );
-    event Bought(
-        uint256 indexed listingId,
-        address indexed buyer,
-        address seller,
-        uint256 price,
-        uint256 fee
-    );
+    event Listed(uint256 indexed listingId, address indexed nft, uint256 tokenId, address seller, uint256 price);
+    event Bought(uint256 indexed listingId, address indexed buyer, address seller, uint256 price, uint256 fee);
     event Canceled(uint256 indexed listingId);
     event FeeRateUpdated(uint256 oldRate, uint256 newRate);
     event FeeRecipientUpdated(address oldAddr, address newAddr);
 
-    constructor(
-        address _paymentToken,
-        address _feeRecipient,
-        uint256 _feeRate
-    ) Ownable(msg.sender) {
+    constructor(address _paymentToken, address _feeRecipient, uint256 _feeRate) Ownable(msg.sender) {
         paymentToken = MyERC20WithTransferAndCall(_paymentToken);
         require(_feeRate < FEE_BASE, "fee too high");
         feeRecipient = _feeRecipient;
         feeRate = _feeRate;
     }
 
-    function list(
-        address nftContract,
-        uint256 tokenId,
-        uint256 price
-    ) external nonReentrant returns (uint256 listingId) {
+    function list(address nftContract, uint256 tokenId, uint256 price)
+        external
+        nonReentrant
+        returns (uint256 listingId)
+    {
         require(price > 0, "price can't be zero");
-        IERC721(nftContract).safeTransferFrom(
-            msg.sender,
-            address(this),
-            tokenId
-        );
+        IERC721(nftContract).safeTransferFrom(msg.sender, address(this), tokenId);
 
         listingId = listingCounter++;
-        listings[listingId] = Listing({
-            nftContract: nftContract,
-            tokenId: tokenId,
-            seller: msg.sender,
-            price: price,
-            active: true
-        });
+        listings[listingId] =
+            Listing({nftContract: nftContract, tokenId: tokenId, seller: msg.sender, price: price, active: true});
 
         emit Listed(listingId, nftContract, tokenId, msg.sender, price);
     }
@@ -82,11 +57,7 @@ contract NFTMarket is ERC721Holder, ReentrancyGuard, Ownable {
         require(msg.sender == item.seller, "only seller can cancel");
 
         item.active = false;
-        IERC721(item.nftContract).safeTransferFrom(
-            address(this),
-            item.seller,
-            item.tokenId
-        );
+        IERC721(item.nftContract).safeTransferFrom(address(this), item.seller, item.tokenId);
         emit Canceled(listingId);
     }
 
@@ -104,15 +75,8 @@ contract NFTMarket is ERC721Holder, ReentrancyGuard, Ownable {
         _deliverNFT(listingId, buyer, fee);
     }
 
-    function tokensReceived(
-        address from,
-        uint256 amount,
-        bytes calldata data
-    ) external nonReentrant {
-        require(
-            msg.sender == address(paymentToken),
-            "only payment token can call"
-        );
+    function tokensReceived(address from, uint256 amount, bytes calldata data) external nonReentrant {
+        require(msg.sender == address(paymentToken), "only payment token can call");
 
         uint256 listingId = abi.decode(data, (uint256));
         Listing storage item = _getValidListing(listingId);
@@ -142,25 +106,15 @@ contract NFTMarket is ERC721Holder, ReentrancyGuard, Ownable {
         emit FeeRecipientUpdated(old, newRecipient);
     }
 
-    function _getValidListing(
-        uint256 listingId
-    ) internal view returns (Listing storage) {
+    function _getValidListing(uint256 listingId) internal view returns (Listing storage) {
         Listing storage item = listings[listingId];
         require(item.active, "listing not active");
         return item;
     }
 
-    function _deliverNFT(
-        uint256 listingId,
-        address buyer,
-        uint256 fee
-    ) internal {
+    function _deliverNFT(uint256 listingId, address buyer, uint256 fee) internal {
         Listing storage item = listings[listingId];
-        IERC721(item.nftContract).safeTransferFrom(
-            address(this),
-            buyer,
-            item.tokenId
-        );
+        IERC721(item.nftContract).safeTransferFrom(address(this), buyer, item.tokenId);
         item.active = false;
         emit Bought(listingId, buyer, item.seller, item.price, fee);
     }

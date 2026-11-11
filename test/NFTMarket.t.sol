@@ -9,6 +9,7 @@ import "../src/NFTMarket.sol";
 contract TestNFT is ERC721 {
     uint256 public tokenIdCounter;
     constructor() ERC721("TestNFT", "TNFT") {}
+
     function mint(address to) external returns (uint256) {
         uint256 id = tokenIdCounter++;
         _safeMint(to, id);
@@ -28,11 +29,7 @@ contract NFTMarketTest is Test {
     uint256 feeRate = 50;
 
     function setUp() public {
-        paymentToken = new MyERC20WithTransferAndCall(
-            "PayToken",
-            "PAY",
-            10000 * 1e18
-        );
+        paymentToken = new MyERC20WithTransferAndCall("PayToken", "PAY", 10000 * 1e18);
         nft = new TestNFT();
         market = new NFTMarket(address(paymentToken), feeAddr, feeRate);
 
@@ -66,11 +63,7 @@ contract NFTMarketTest is Test {
         vm.stopPrank();
 
         vm.prank(buyer);
-        paymentToken.transferAndCall(
-            address(market),
-            price,
-            abi.encode(listingId)
-        );
+        paymentToken.transferAndCall(address(market), price, abi.encode(listingId));
 
         uint256 fee = (price * feeRate) / 1000;
         uint256 sellerGet = price - fee;
